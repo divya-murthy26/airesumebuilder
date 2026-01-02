@@ -18,7 +18,8 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json()); // Parse JSON bodies // middlware
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: ['http://localhost:5173',
+  'https://airesumebuilder-frontend.onrender.com'],
   credentials: true
 }));         // Enable Cross-Origin Resource Sharing
 
