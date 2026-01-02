@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import connectDB from './configs/db.js';
 import resumeRoutes from './routes/resumeRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
-import authRoutes from './routes/userRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import cors from 'cors';
 
 // Load environment variables
@@ -18,8 +18,11 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json()); // Parse JSON bodies // middlware
 app.use(cors({
-  origin: ['http://localhost:5173',
-  'https://airesumebuilder-client.onrender.com'],
+  origin: [
+    'http://localhost:5173',
+    'https://airesumebuilder-client.onrender.com', // Your specific Render URL
+    process.env.FRONTEND_URL // Allow configuring this via Render Env Vars
+  ],
   credentials: true
 }));         // Enable Cross-Origin Resource Sharing
 
