@@ -1,0 +1,22 @@
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+  @import "tailwindcss";
+  
+
+  *{
+    font-family:"Outfit" , sans-serif ;
+  }
+
+  @layer base{
+    button {
+      @apply cursor-pointer ;
+    }
+        input:not([type="checkbox"]),
+          textarea {
+        @apply w-full border border-slate-300 rounded-md px-3 py-2
+           text-sm text-slate-800
+           focus:outline-none focus:ring-2 focus:ring-slate-400;
+  }
+    
+    
+
+  }
