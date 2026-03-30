@@ -1,4 +1,5 @@
 import Resume from '../models/resumeModel.js';
+import OpenAI from 'openai';
 import imagekit from '../configs/imagekit.js';
 import mammoth from 'mammoth';
 import openai from '../configs/ai.js';
@@ -325,6 +326,7 @@ const uploadResumeFile = async (req, res) => {
         };
 
         parsedData = parseAIResponse(content);
+        if (!parsedData) throw new Error("Could not parse AI response");
         
         // Merge parsed data into resume
         if (parsedData.personal) resume.personal = { ...resume.personal, ...parsedData.personal };
@@ -388,7 +390,8 @@ const enhanceText = async (req, res) => {
     res.json({ enhancedText });
   } catch (error) {
     console.error("AI Enhance failed:", error);
-    res.status(500).json({ message: 'Failed to enhance text', error: error.message });
+    const statusCode = error instanceof OpenAI.APIError ? (error.status || 500) : 500;
+    res.status(statusCode).json({ message: 'Failed to enhance text', error: error.message });
   }
 };
 

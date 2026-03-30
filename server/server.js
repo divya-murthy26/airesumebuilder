@@ -1,16 +1,16 @@
+import 'dotenv/config'; // Load variables immediately before other imports
 import express from 'express';
-import dotenv from 'dotenv';
 import connectDB from './configs/db.js';
 import resumeRoutes from './routes/resumeRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import cors from 'cors';
 
-// Load environment variables
-dotenv.config();
-
-// Connect to Database
-connectDB();
+// Connect to Database with error handling
+connectDB().catch(err => {
+  console.error('Critical Database Error:', err.message);
+  process.exit(1);
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;

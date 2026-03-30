@@ -1,171 +1,161 @@
-//controller for enhancing a resumes professional summary 
+// controller for enhancing a resumes professional summary 
 
-import openai from "../configs/ai.js";
+import genAI from "../configs/ai.js";
 import Resume from "../models/resumeModel.js";
 
+// Simple error handler
+const handleAIError = (error, res) => {
+    console.error("Gemini Error:", error);
+    return res.status(500).json({ 
+        message: error.message || "AI service error"
+    });
+};
 
-//post:/api/ai/enhance-pro-sum
+
+// ✅ enhance professional summary
 export const enhanceProSummary = async (req, res) => {  
     try {
         const { userContent } = req.body;
 
-        if(!userContent){
+        if (!userContent) {
             return res.status(400).json({ message: 'Please enter all fields' });
-        
         }
 
-        const response = await openai.chat.completions.create({
-           
-        model: process.env.OPENAI_MODEL,
-            messages: [
-                { role: "system", content: `You are an expert resume writer and career coach.
+        const model = genAI.getGenerativeModel({
+            model: process.env.GEMINI_MODEL,
+        });
 
-Task:
-Rewrite and enhance the professional summary below while preserving the original meaning.
+        const prompt = `
+You are an expert resume writer and career coach.
 
-Strict Rules:
-- Improve sentence structure, clarity, and impact
-- Make it ATS-friendly
-- Use strong but realistic action verbs
-- Do NOT add new skills, tools, companies, or years of experience
-- Do NOT exaggerate or invent achievements
-- Keep it professional and concise (2–4 sentences)
-- Write in third person only (no "I", "me", "my")
-- Avoid buzzwords and filler phrases
+Rewrite and enhance the professional summary while preserving meaning.
 
-Output Instructions:
-- Return ONLY the enhanced professional summary
-- Do NOT include explanations, headings, or bullet points` },
-                {
-                    role: "user",
-                    content: `Professional Summary:\n"""\n${userContent}\n"""`,
-                },
-            ],
-})
+Rules:
+- Improve clarity and impact
+- ATS-friendly
+- No fake info
+- 2–4 sentences
+- Third person only
+- Return only final text
 
-      const enhancedcontent = response.choices[0].message.content;
-      return res.status(200).json({ enhancedcontent });
-    }catch (error) {
-        res.status(500).json({ message: error.message });
+Professional Summary:
+${userContent}
+`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const enhancedcontent = response.text();
+
+        if (!enhancedcontent) {
+            return res.status(500).json({ message: "AI returned empty response" });
+        }
+
+        return res.status(200).json({ enhancedcontent });
+
+    } catch (error) {
+        return handleAIError(error, res);
     }
-}
+};
 
-// controller for resumes job description
-//post : /api/ai/enhance-job-desc
 
+// ✅ enhance job description
 export const enhancejobdescription = async (req, res) => {  
     try {
         const { userContent } = req.body;
 
-        if(!userContent){
+        if (!userContent) {
             return res.status(400).json({ message: 'Please enter all fields' });
-        
         }
 
-        const response = await openai.chat.completions.create({
-           
-        model: process.env.OPENAI_MODEL,
-            messages: [
-                { role: "system", 
-                content: "your are an expert in resume writing . your task is to enhance the job description of a resume .The job description should be 1-2 sentences also highlighting key responsibilities and achievements . Use Action words and quantifiable results where possible. Make it  ATS - friendly and only return text no options or any anything else ." },
-                {
-                    role: "user",
-                    content: userContent,
-                },
-            ],
-})
+        const model = genAI.getGenerativeModel({
+            model: process.env.GEMINI_MODEL,
+        });
 
-      const enhancedcontent = response.choices[0].message.content;
-      return res.status(200).json({ enhancedcontent });
-    }catch (error) {
-        res.status(500).json({ message: error.message });
+        const prompt = `
+Enhance this resume job description into 1-2 strong, impactful sentences.
+
+Use:
+- Action verbs
+- Measurable impact
+- ATS-friendly tone
+
+Return only final text.
+
+Job Description:
+${userContent}
+`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const enhancedcontent = response.text();
+
+        if (!enhancedcontent) {
+            return res.status(500).json({ message: "AI returned empty response" });
+        }
+
+        return res.status(200).json({ enhancedcontent });
+
+    } catch (error) {
+        return handleAIError(error, res);
     }
-}
+};
 
-//controller for uploading a resume to the database
-//post :/api/ai/uplaod-resume
 
-export const uploadResume= async (req, res) => {  
+// ✅ upload resume + AI parsing
+export const uploadResume = async (req, res) => {  
     try {
-        
-        const { resumeText , title} = req.body;
-        const userId = req.userId;
+        const { resumeText, title } = req.body;
+        const userId = req.user._id;
 
-        if(!resumeText ){
-            return res.status(400).json({message: 'Please enter all fields'});
+        if (!resumeText) {
+            return res.status(400).json({ message: 'Please enter all fields' });
         }
 
-        const systemPrompt = "you are an expert AI Agent to extract data from resume."
-        const userPrompt = `extract data from this resume :${resumeText}
-        provide data in the following JSON format with no 
-        additional text before or after:
-        {
-        professionalSummary: {
-      type: String
-    },
-    skills: [String],
-    personalInfo: {
-      image: String,
-      fullName: String,
-      profession: String,
-      email: String,
-      phone: String,
-      location: String,
-      linkedin: String,
-      website: String
-    },
-    projects: [
-      {
-        name: String,
-        type: String,
-        description: String
-      }
-    ],
-    education: [
-      {
-        institution: String,
-        degree: String,
-        field: String,
-        graduationDate: String,
-        gpa: String
-      }
-    ],
-    experience: [
-      {
-        company: String,
-        position: String,
-        startDate: String,
-        endDate: String,
-        description: String,
-        isCurrent: Boolean
-      }
-    ]
-  },
+        const model = genAI.getGenerativeModel({
+            model: process.env.GEMINI_MODEL,
+        });
+
+        const prompt = `
+Extract structured data from this resume:
+
+${resumeText}
+
+Return ONLY valid JSON. No explanations. No markdown.
+`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        if (!text) {
+            return res.status(500).json({ message: "AI returned empty JSON" });
         }
-        `;
-        
 
-        const response = await openai.chat.completions.create({
-           
-        model: process.env.OPENAI_MODEL,
-            messages: [
-                { role: "system",
-                     content: systemPrompt },
-                {
-                    role: "user",
-                    content:userPrompt,
-                },
-            ],
-            response_format: { type: "json_object" },
-})
+        // Safe parsing
+        const parseAI = (text) => {
+            try {
+                let clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                return JSON.parse(clean);
+            } catch {
+                return null;
+            }
+        };
 
-      const extractedData= response.choices[0].message.content;
-      const parsedData = JSON.parse(extractedData);
-      const newResume = await Resume.create({
-        userId , title , ...parsedData
-      });
-      res.json({resumeId: newResume._id});
-    }catch (error) {
-        res.status(500).json({ message: error.message });
+        const parsedData = parseAI(text);
+
+        if (!parsedData) {
+            throw new Error("AI failed to generate valid JSON");
+        }
+
+        const newResume = await Resume.create({
+            userId,
+            title: title || "AI Imported Resume",
+            ...parsedData
+        });
+
+        res.json({ resumeId: newResume._id });
+
+    } catch (error) {
+        return handleAIError(error, res);
     }
-}
+};
